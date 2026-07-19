@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSubmit • Admin Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .exercise-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .exercise-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .modal { animation: fadeInScale 0.2s ease-out forwards; }
+        @keyframes fadeInScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .countdown { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="bg-white border-b shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-gray-900">EduSubmit</h1>
+                        <p class="text-[10px] text-gray-500 -mt-1">Admin-Controlled Assignment Portal</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-x-2">
+                    <button onclick="switchView('student')" 
+                            class="flex items-center gap-x-2 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-2xl transition-colors">
+                        <i class="fas fa-user-graduate"></i>
+                        <span class="hidden sm:inline">Student View</span>
+                    </button>
+                    <button onclick="switchView('admin')" 
+                            class="flex items-center gap-x-2 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-2xl transition-colors">
+                        <i class="fas fa-user-shield"></i>
+                        <span class="hidden sm:inline">Admin Dashboard</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- STUDENT VIEW -->
+        <div id="student-view">
+            <div class="mb-8">
+                <h2 class="text-4xl font-bold tracking-tight text-gray-900">Welcome back, Student 👋</h2>
+                <p class="mt-2 text-lg text-gray-600">Complete your assignments before the deadline. Work is auto-submitted when time runs out.</p>
+            </div>
+
+            <!-- Student Name -->
+            <div class="bg-white border rounded-3xl p-6 mb-8 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Your Name / Student ID</label>
+                        <input type="text" id="student-name" placeholder="Enter your full name or ID" 
+                               class="w-full px-5 py-3 border border-gray-300 focus:border-blue-500 rounded-2xl text-lg focus:outline-none transition-colors">
+                    </div>
+                    <button onclick="saveStudentName()" 
+                            class="px-8 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-2xl transition-all flex items-center justify-center gap-x-2">
+                        <i class="fas fa-save"></i>
+                        <span>Save Name</span>
+                    </button>
+                </div>
+                <p id="student-name-display" class="mt-3 text-sm font-medium text-emerald-600 hidden"></p>
+            </div>
+
+            <!-- Exercises Header -->
+            <div class="flex items-center justify-between mb-5 px-1">
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-900">Available Assignments</h3>
+                    <p class="text-sm text-gray-500">Grouped by subject • Click any card to begin</p>
+                </div>
+                <div id="exercise-count" class="px-4 py-1.5 text-sm font-medium bg-white border rounded-2xl text-gray-600"></div>
+            </div>
+
+            <!-- Exercises Grid (Grouped by Subject) -->
+            <div id="student-exercises-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Populated via JavaScript -->
+            </div>
+
+            <!-- My Submissions -->
+            <div class="mt-10">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h3 class="text-2xl font-semibold text-gray-900">My Submissions &amp; Assessments</h3>
+                </div>
+                <div id="my-submissions" class="bg-white border rounded-3xl shadow-sm overflow-hidden">
+                    <!-- Populated via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN VIEW -->
+        <div id="admin-view" class="hidden">
+            <div class="mb-8">
+                <h2 class="text-4xl font-bold tracking-tight text-gray-900">Admin Dashboard</h2>
+                <p class="mt-2 text-lg text-gray-600">Create assignments with subjects &amp; deadlines, edit anytime, review student work.</p>
+            </div>
+
+            <!-- Login Card -->
+            <div id="admin-login-section" class="max-w-md mx-auto">
+                <div class="bg-white border rounded-3xl p-8 shadow-sm">
+                    <div class="text-center mb-7">
+                        <div class="mx-auto w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
+                            <i class="fas fa-shield-halved text-blue-600 text-3xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold">Admin Login</h3>
+                        <p class="text-gray-500 mt-1 text-sm">Enter your secure password</p>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+                            <input type="password" id="admin-password" placeholder="Enter admin password"
+                                   class="w-full px-5 py-3.5 border border-gray-300 focus:border-blue-500 rounded-2xl text-lg tracking-widest focus:outline-none transition-colors">
+                        </div>
+                        <button onclick="loginAdmin()" 
+                                class="w-full py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-lg rounded-2xl transition-all flex items-center justify-center gap-x-3">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Login to Dashboard</span>
+                        </button>
+                    </div>
+
+                    <p class="text-center text-xs text-gray-400 mt-6">Admin access only</p>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div id="admin-dashboard" class="hidden">
+                <!-- Top bar -->
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-x-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-inner">
+                            <i class="fas fa-user-shield text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-xl">Administrator</p>
+                            <p class="text-xs text-emerald-600 font-medium flex items-center gap-x-1">
+                                <i class="fas fa-circle text-[8px]"></i> FULL ACCESS
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="logoutAdmin()" 
+                            class="flex items-center gap-x-2 px-5 py-2.5 text-red-600 hover:bg-red-50 font-semibold rounded-2xl text-sm transition-colors">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-5 mb-8">
+                    <div class="bg-white border rounded-3xl p-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Assignments</p>
+                                <p id="stat-exercises" class="text-5xl font-bold text-gray-900 mt-1">0</p>
+                            </div>
+                            <i class="fas fa-tasks text-4xl text-blue-400 mt-1"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white border rounded-3xl p-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Submissions</p>
+                                <p id="stat-submissions" class="text-5xl font-bold text-gray-900 mt-1">0</p>
+                            </div>
+                            <i class="fas fa-paper-plane text-4xl text-emerald-400 mt-1"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white border rounded-3xl p-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Registered Students</p>
+                                <p id="stat-students" class="text-5xl font-bold text-gray-900 mt-1">0</p>
+                            </div>
+                            <i class="fas fa-users text-4xl text-violet-400 mt-1"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white border rounded-3xl p-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Pending Review</p>
+                                <p id="stat-pending" class="text-5xl font-bold text-amber-600 mt-1">0</p>
+                            </div>
+                            <i class="fas fa-clock text-4xl text-amber-400 mt-1"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create Assignment -->
+                <div class="bg-white border rounded-3xl p-7 mb-8 shadow-sm">
+                    <h3 class="font-bold text-xl flex items-center gap-x-3 mb-5">
+                        <i class="fas fa-plus-circle text-blue-600"></i> 
+                        Create New Assignment
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 gap-y-5">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-1.5">Assignment Title</label>
+                            <input id="new-exercise-title" type="text" placeholder="e.g. Quadratic Equations Practice"
+                                   class="w-full px-5 py-3 border border-gray-300 focus:border-blue-500 rounded-2xl text-base focus:outline-none">
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm font-semibold text-gray-700 block mb-1.5">Subject / Category</label>
+                                <select id="new-exercise-subject" 
+                                        class="w-full px-5 py-3 border border-gray-300 focus:border-blue-500 rounded-2xl text-base focus:outline-none bg-white">
+                                    <option value="Mathematics">Mathematics</option>
+                                    <option value="Science">Science</option>
+                                    <option value="English Language">English Language</option>
+                                    <option value="History">History</option>
+                                    <option value="Computer Science">Computer Science</option>
+                                    <option value="Physics">Physics</option>
+                                    <option value="Chemistry">Chemistry</option>
+                                    <option value="Biology">Biology</option>
+                                    <option value="Other">Other / General</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm font-semibold text-gray-700 block mb-1.5">Due Date &amp; Time (Deadline)</label>
+                                <input id="new-exercise-due" type="datetime-local" 
+                                       class="w-full px-5 py-3 border border-gray-300 focus:border-blue-500 rounded-2xl text-base focus:outline-none">
+                                <p class="text-xs text-gray-500 mt-1">Students see live countdown. Auto-submits when time expires.</p>
+                            </div>
+                            
+                            <!-- AUTO-MARK SETTINGS -->
+                            <div>
+                                <label class="text-sm font-semibold text-gray-700 block mb-1.5">Correct Answer / Marking Keywords (Optional)</label>
+                                <textarea id="new-exercise-correct-answer" rows="3" placeholder="Enter the correct answer or important keywords for automatic marking..."
+                                          class="w-full px-5 py-3 border border-gray-300 focus:border-blue-500 rounded-2xl text-base focus:outline-none resize-y"></textarea>
+                                <p class="text-xs text-gray-500 mt-1">If provided, the system will automatically mark submitted answers based on matching the correct answer or keywords.</p>
+                            </div>
+                            <div>
+                                <label class="text-sm font-semibold text-gray-700 block mb-1.5">Total Marks</label>
+                                <input id="new-exercise-total-marks" type="number" min="1" value="100"
+                                       class="w-full px-5 py-3 border border-gray-300 focus:border-blue-500 rounded-2xl text-base focus:outline-none">
+                            </div>
+
+                            <!-- NEW: Assignment Access Code -->
+                            <div>
+                                <label class="text-sm font-semibold text-gray-700 block mb-1.5">Assignment Code (Required for Students)</label>
+                                <input id="new-exercise-code" type="text" placeholder="e.g. MATH-2026 or Q4EXAM"
+                                       class="w-full px-5 py-3 border border-gray-300 focus:border-blue-500 rounded-2xl text-base focus:outline-none font-mono">
+                                <p class="text-xs text-gray-500 mt-1">Students must enter this exact code to access and submit this assignment.</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-1.5">Instructions for Students</label>
+                            <textarea id="new-exercise-instructions" rows="5" placeholder="Write clear instructions here..."
+                                      class="w-full px-5 py-3 border border-gray-300 focus:border-blue-500 rounded-2xl text-base focus:outline-none resize-y"></textarea>
+                        </div>
+
+                        <!-- NEW: Attachment (Image or PDF) -->
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-1.5">Attach Image or PDF (optional)</label>
+                            <input type="file" id="new-exercise-attachment" accept="image/*,.pdf" 
+                                   class="w-full px-4 py-2.5 border border-gray-300 focus:border-blue-500 rounded-2xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <p class="text-xs text-gray-500 mt-1">Students will see the image or be able to download the PDF when attempting.</p>
+                        </div>
+                        
+                        <div>
+                            <button onclick="addNewExercise()" 
+                                    class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-2xl flex items-center gap-x-2 transition-all">
+                                <i class="fas fa-plus"></i>
+                                <span>Publish Assignment</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manage Students -->
+                <div class="mb-8">
+                    <h3 class="font-bold text-xl mb-4 px-1 flex items-center gap-x-2">
+                        <i class="fas fa-user-plus text-violet-600"></i> 
+                        Manage Students / Members
+                    </h3>
+                    
+                    <div class="bg-white border rounded-3xl p-6 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="text-sm font-semibold text-gray-700 block mb-1.5">Student Full Name</label>
+                                <input id="new-student-name" type="text" placeholder="e.g. Alex Rivera"
+                                       class="w-full px-5 py-3 border border-gray-300 focus:border-violet-500 rounded-2xl text-base focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="text-sm font-semibold text-gray-700 block mb-1.5">Student ID (optional)</label>
+                                <input id="new-student-id" type="text" placeholder="e.g. STU-2026-042"
+                                       class="w-full px-5 py-3 border border-gray-300 focus:border-violet-500 rounded-2xl text-base focus:outline-none">
+                            </div>
+                        </div>
+                        <button onclick="addNewStudent()" 
+                                class="mt-4 px-8 py-3 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-bold rounded-2xl flex items-center gap-x-2 transition-all">
+                            <i class="fas fa-user-plus"></i>
+                            <span>Add New Student Member</span>
+                        </button>
+                    </div>
+
+                    <div id="admin-students-list" class="bg-white border rounded-3xl shadow-sm overflow-hidden">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Manage Assignments -->
+                <div class="mb-8">
+                    <h3 class="font-bold text-xl mb-4 px-1">Manage Assignments</h3>
+                    <div id="admin-exercises-list" class="bg-white border rounded-3xl shadow-sm overflow-hidden">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- All Submissions -->
+                <div>
+                    <div class="flex items-center justify-between mb-4 px-1">
+                        <h3 class="font-bold text-xl">Student Submissions &amp; Assessments</h3>
+                        <button onclick="clearAllSubmissions()" 
+                                class="text-sm flex items-center gap-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-2xl font-medium transition-colors">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Clear All</span>
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white border rounded-3xl shadow-sm overflow-hidden">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="text-left px-7 py-4 text-xs font-bold text-gray-500 tracking-wider">STUDENT</th>
+                                    <th class="text-left px-7 py-4 text-xs font-bold text-gray-500 tracking-wider">ASSIGNMENT</th>
+                                    <th class="text-left px-7 py-4 text-xs font-bold text-gray-500 tracking-wider">STATUS</th>
+                                    <th class="text-left px-7 py-4 text-xs font-bold text-gray-500 tracking-wider">DATE</th>
+                                    <th class="w-28 px-7 py-4"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-submissions-table" class="divide-y text-sm">
+                                <!-- Populated dynamically by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exercise Attempt Modal -->
+    <div id="exercise-modal" onclick="if (event.target.id === 'exercise-modal') closeExerciseModal()" 
+         class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[92vh]">
+            
+            <div class="px-7 pt-6 pb-4 border-b flex items-start justify-between">
+                <div>
+                    <h3 id="modal-exercise-title" class="text-2xl font-bold text-gray-900 pr-8"></h3>
+                </div>
+                <button onclick="closeExerciseModal()" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="p-7 overflow-auto flex-1 space-y-6">
+                <div>
+                    <div class="uppercase tracking-widest text-xs font-bold text-gray-500 mb-2">INSTRUCTIONS</div>
+                    <div id="modal-exercise-instructions" 
+                         class="bg-gray-50 border text-gray-700 p-5 rounded-2xl text-[15px] leading-relaxed whitespace-pre-wrap"></div>
+                </div>
+
+                <!-- NEW: Attachment Preview (Image or PDF) -->
+                <div id="attachment-section" class="hidden">
+                    <div class="uppercase tracking-widest text-xs font-bold text-gray-500 mb-2">ATTACHMENT</div>
+                    <div id="attachment-preview" class="border rounded-2xl p-4 bg-white"></div>
+                </div>
+
+                <!-- Live Countdown Timer -->
+                <div id="timer-section" class="hidden">
+                    <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-x-3">
+                                <i class="fas fa-clock text-2xl text-amber-600"></i>
+                                <div>
+                                    <div class="text-xs uppercase tracking-widest font-bold text-amber-600">TIME REMAINING</div>
+                                    <div class="countdown text-3xl font-mono font-bold text-amber-800" id="countdown-timer">--:--:--</div>
+                                </div>
+                            </div>
+                            <div class="text-right text-xs text-amber-600 font-medium">
+                                Auto-submits<br>when time expires
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="uppercase tracking-widest text-xs font-bold text-gray-500">YOUR SUBMISSION</div>
+                    </div>
+                    <textarea id="submission-answer" rows="9"
+                              class="w-full border border-gray-300 focus:border-blue-500 rounded-2xl p-5 text-base font-mono focus:outline-none"
+                              placeholder="Write your complete answer or solution here..."></textarea>
+                    <p class="text-xs text-gray-400 mt-2 px-1">Your work will be sent to the admin for review. It will be auto-submitted if the deadline passes while this window is open.</p>
+                </div>
+            </div>
+
+            <div class="p-5 border-t bg-gray-50 flex justify-end gap-x-3 rounded-b-3xl">
+                <button onclick="closeExerciseModal()" 
+                        class="px-6 py-3 text-gray-700 hover:bg-gray-200 font-semibold rounded-2xl">Cancel</button>
+                <button onclick="submitCurrentExercise()" 
+                        class="px-8 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-2xl flex items-center gap-x-2">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Submit to Admin</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submission Review / Assessment Modal -->
+    <div id="submission-modal" onclick="if (event.target.id === 'submission-modal') closeSubmissionModal()" 
+         class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl flex flex-col max-h-[92vh]">
+            
+            <div class="px-7 pt-6 pb-4 border-b">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="uppercase text-xs tracking-[1.5px] font-bold text-gray-500">SUBMISSION REVIEW</div>
+                        <h3 id="submission-exercise-title" class="text-2xl font-bold text-gray-900 mt-1"></h3>
+                        <p id="submission-meta" class="text-sm text-gray-500 mt-0.5"></p>
+                    </div>
+                    <button onclick="closeSubmissionModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-7 overflow-auto flex-1 space-y-6">
+                <!-- Student Answer -->
+                <div>
+                    <div class="uppercase tracking-widest text-xs font-bold text-gray-500 mb-2">STUDENT ANSWER</div>
+                    <pre id="submission-answer-full" 
+                         class="bg-gray-900 text-emerald-300 p-6 rounded-2xl text-sm leading-relaxed overflow-auto whitespace-pre-wrap font-mono border border-gray-800 max-h-[320px]"></pre>
+                </div>
+
+                <!-- Assessment Section (Admin) -->
+                <div id="assessment-section" class="border-t pt-6 hidden">
+                    <div class="uppercase tracking-widest text-xs font-bold text-emerald-600 mb-3">ASSESS THIS SUBMISSION</div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Grade / Score</label>
+                            <input id="assessment-grade" type="text" placeholder="e.g. 85/100 or A-"
+                                   class="w-full px-4 py-2.5 border border-gray-300 focus:border-emerald-500 rounded-2xl text-base focus:outline-none">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Feedback / Comments</label>
+                        <textarea id="assessment-feedback" rows="4" placeholder="Provide constructive feedback..."
+                                  class="w-full px-4 py-3 border border-gray-300 focus:border-emerald-500 rounded-2xl text-base focus:outline-none"></textarea>
+                    </div>
+                    
+                    <button onclick="saveAssessment()" 
+                            class="mt-4 px-8 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-2xl flex items-center gap-x-2 transition-all">
+                        <i class="fas fa-check-double"></i>
+                        <span>Save Assessment &amp; Send to Student</span>
+                    </button>
+                </div>
+
+                <!-- Student View of Assessment -->
+                <div id="student-assessment-view" class="border-t pt-6 hidden">
+                    <div class="uppercase tracking-widest text-xs font-bold text-emerald-600 mb-3">TEACHER ASSESSMENT</div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
+                        <div class="flex items-center gap-x-3 mb-3">
+                            <div class="text-sm font-semibold text-emerald-700">Grade:</div>
+                            <div id="student-grade-badge" 
+                                 class="px-4 py-1 bg-emerald-600 text-white font-mono font-bold text-lg rounded-2xl"></div>
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-emerald-700 mb-1">Feedback:</div>
+                            <div id="student-feedback-text" class="text-gray-700 whitespace-pre-wrap leading-relaxed"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-7 py-5 border-t bg-gray-50 flex justify-end rounded-b-3xl">
+                <button onclick="closeSubmissionModal()" 
+                        class="px-7 py-3 bg-gray-900 hover:bg-black text-white font-semibold rounded-2xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== DATA & STATE ====================
+        let exercises = [];
+        let submissions = [];
+        let students = [];
+        let currentStudentName = '';
+        let isAdminLoggedIn = true;
+        let currentExerciseId = null;
+        let currentViewingSubmissionId = null;
+        let countdownInterval = null;
+
+        function loadData() {
+            const savedExercises = localStorage.getItem('portal_exercises');
+            const savedSubmissions = localStorage.getItem('portal_submissions');
+            const savedStudents = localStorage.getItem('portal_students');
+            const savedName = localStorage.getItem('portal_student_name');
+
+            if (savedExercises) {
+                exercises = JSON.parse(savedExercises);
+                // Ensure all exercises have subject and dueDate fields (migration)
+                exercises.forEach(ex => {
+                    if (!ex.subject) ex.subject = 'Other';
+                    if (!ex.hasOwnProperty('dueDate')) ex.dueDate = null;
+                    if (!ex.hasOwnProperty('assignmentCode')) ex.assignmentCode = '';
+                    if (!ex.hasOwnProperty('attachment')) ex.attachment = null;
+                    if (!ex.hasOwnProperty('correctAnswer')) ex.correctAnswer = '';
+                    if (!ex.hasOwnProperty('totalMarks')) ex.totalMarks = 100;
+                });
+            } else {
+                // Seed with sample data
+                const now = new Date();
+                exercises = [
+                    {
+                        id: Date.now(),
+                        title: "Quadratic Equations Practice",
+                        instructions: "Solve the quadratic equation below and show your complete working:\n\nx² + 7x + 12 = 0\n\nFind both values of x. Show each step clearly.",
+                        subject: "Mathematics",
+                        dueDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        assignmentCode: "MATH101"
+                    },
+                    {
+                        id: Date.now() + 100,
+                        title: "Climate Change Essay",
+                        instructions: "Write a well-structured essay (350-450 words) on the following topic:\n\n\"How climate change is affecting food production around the world.\"\n\nInclude an introduction, at least two real-world examples, and a conclusion with possible solutions.",
+                        subject: "English Language",
+                        dueDate: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+                        assignmentCode: "ESSAY42"
+                    },
+                    {
+                        id: Date.now() + 200,
+                        title: "Python Functions Challenge",
+                        instructions: "Create a Python function named calculate_discount that accepts two arguments: original_price and discount_percent.\n\nThe function should return the final price after applying the discount.\n\nAlso write a short example showing how to use your function with original_price = 250 and discount_percent = 20.",
+                        subject: "Computer Science",
+                        dueDate: new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+                        assignmentCode: "PYCODE"
+                    }
+                ];
+                localStorage.setItem('portal_exercises', JSON.stringify(exercises));
+            }
+
+            submissions = savedSubmissions ? JSON.parse(savedSubmissions) : [];
+            students = savedStudents ? JSON.parse(savedStudents) : [];
+            if (!savedStudents) {
+                localStorage.setItem('portal_students', JSON.stringify(students));
+            }
+
+            if (savedName) {
+                currentStudentName = savedName;
+                const nameInput = document.getElementById('student-name');
+                if (nameInput) nameInput.value = currentStudentName;
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('portal_exercises', JSON.stringify(exercises));
+            localStorage.setItem('portal_submissions', JSON.stringify(submissions));
+            localStorage.setItem('portal_students', JSON.stringify(students));
+        }
+
+        function saveStudentName() {
+            const input = document.getElementById('student-name');
+            if (!input || !input.value.trim()) {
+                alert("Please enter your name or student ID.");
+                return;
+            }
+            currentStudentName = input.value.trim();
+            localStorage.setItem('portal_student_name', currentStudentName);
+            updateStudentNameDisplay();
+            showToast("Name saved successfully!");
+        }
+
+        function updateStudentNameDisplay() {
+            const display = document.getElementById('student-name-display');
+            if (display && currentStudentName) {
+                display.innerHTML = `<i class="fas fa-check-circle mr-1.5"></i> Signed in as <strong>${currentStudentName}</strong>`;
+                display.classList.remove('hidden');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 right-6 z-[999] bg-gray-900 text-white px-6 py-3.5 rounded-2xl shadow-xl flex items-center gap-x-3 text-sm`;
+            toast.innerHTML = `
+                <i class="fas fa-check-circle text-emerald-400"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.25s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 200);
+            }, 2600);
+        }
+
+        // ==================== STUDENT SIDE ====================
+        function renderStudentExercises() {
+            const grid = document.getElementById('student-exercises-grid');
+            const countEl = document.getElementById('exercise-count');
+            if (!grid) return;
+
+            grid.innerHTML = '';
+
+            if (exercises.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-white border rounded-3xl p-10 text-center">
+                        <i class="fas fa-folder-open text-5xl text-gray-200 mb-4"></i>
+                        <p class="text-gray-500">No assignments available yet.</p>
+                    </div>
+                `;
+                if (countEl) countEl.innerHTML = `<span class="font-mono">0</span> assignments`;
+                return;
+            }
+
+            if (countEl) countEl.innerHTML = `<span class="font-mono">${exercises.length}</span> assignment${exercises.length > 1 ? 's' : ''}`;
+
+            // Group by subject
+            const grouped = {};
+            exercises.forEach(ex => {
+                const subj = ex.subject || 'Other';
+                if (!grouped[subj]) grouped[subj] = [];
+                grouped[subj].push(ex);
+            });
+
+            const sortedSubjects = Object.keys(grouped).sort();
+
+            sortedSubjects.forEach(subject => {
+                // Subject header
+                const header = document.createElement('div');
+                header.className = `col-span-full mt-6 mb-2 px-1 flex items-center gap-x-3`;
+                header.innerHTML = `
+                    <div class="flex items-center gap-x-2">
+                        <i class="fas fa-folder text-blue-600"></i>
+                        <h4 class="font-bold text-lg text-gray-800">${subject}</h4>
+                        <span class="px-3 py-0.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-2xl">${grouped[subject].length}</span>
+                    </div>
+                    <div class="flex-1 h-px bg-gray-200"></div>
+                `;
+                grid.appendChild(header);
+
+                grouped[subject].forEach(exercise => {
+                    const card = document.createElement('div');
+                    card.className = `exercise-card bg-white border rounded-3xl p-6 flex flex-col h-full cursor-pointer`;
+
+                    const shortDesc = exercise.instructions.length > 115 
+                        ? exercise.instructions.substring(0, 115) + '...' 
+                        : exercise.instructions;
+
+                    let dueHTML = '';
+                    let isExpired = false;
+                    let buttonHTML = '';
+
+                    if (exercise.dueDate) {
+                        const due = new Date(exercise.dueDate);
+                        const now = new Date();
+                        isExpired = now > due;
+
+                        const dueStr = due.toLocaleDateString(undefined, { 
+                            month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' 
+                        });
+
+                        if (isExpired) {
+                            dueHTML = `<div class="mt-3 flex items-center text-xs text-red-600 font-medium"><i class="fas fa-exclamation-triangle mr-1.5"></i> DEADLINE EXPIRED — Submissions closed</div>`;
+                            buttonHTML = `<button disabled class="w-full py-[13px] bg-gray-300 text-gray-500 font-bold rounded-2xl flex items-center justify-center gap-x-2 text-sm cursor-not-allowed"><i class="fas fa-lock"></i> <span>EXPIRED</span></button>`;
+                        } else {
+                            const diffMs = due - now;
+                            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                            const timeLeft = diffDays > 1 ? `${diffDays} days left` : 'Due very soon';
+                            dueHTML = `<div class="mt-3 flex items-center text-xs text-amber-600 font-medium"><i class="fas fa-clock mr-1.5"></i> Due ${dueStr} <span class="ml-2 px-2 py-0.5 bg-amber-100 rounded-xl text-[10px]">${timeLeft}</span></div>`;
+                            buttonHTML = `<button onclick="event.stopImmediatePropagation(); attemptExercise(${exercise.id})" class="w-full py-[13px] bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-all text-white font-bold rounded-2xl flex items-center justify-center gap-x-2 text-sm"><i class="fas fa-edit"></i> <span>ATTEMPT ASSIGNMENT</span></button>`;
+                        }
+                    } else {
+                        dueHTML = `<div class="mt-3 text-xs text-gray-400"><i class="fas fa-infinity mr-1"></i> No strict deadline</div>`;
+                        buttonHTML = `<button onclick="event.stopImmediatePropagation(); attemptExercise(${exercise.id})" class="w-full py-[13px] bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-all text-white font-bold rounded-2xl flex items-center justify-center gap-x-2 text-sm"><i class="fas fa-edit"></i> <span>ATTEMPT ASSIGNMENT</span></button>`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <span class="inline-block px-3 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-2xl mb-1.5">${exercise.subject || 'General'}</span>
+                                    <h4 class="font-bold text-xl text-gray-900 pr-3 leading-tight">${exercise.title}</h4>
+                                </div>
+                            </div>
+                            <p class="text-[14px] text-gray-600 leading-relaxed line-clamp-2">${shortDesc}</p>
+                            ${dueHTML}
+                        </div>
+                        <div class="mt-auto pt-5">
+                            ${buttonHTML}
+                        </div>
+                    `;
+                    
+                    if (!isExpired) {
+                        card.onclick = () => attemptExercise(exercise.id);
+                    }
+                    grid.appendChild(card);
+                });
+            });
+        }
+
+        function attemptExercise(exerciseId) {
+            const exercise = exercises.find(e => e.id === exerciseId);
+            if (!exercise) return;
+
+            // 1. Check if student name is registered by admin
+            if (!currentStudentName) {
+                alert("Please save your name first (at the top of the Student View).");
+                return;
+            }
+            
+            const isRegistered = students.some(s => 
+                s.name.toLowerCase() === currentStudentName.toLowerCase()
+            );
+            
+            if (!isRegistered) {
+                alert("Access denied. Your name is not registered by the admin. Please contact your teacher/admin to be added.");
+                return;
+            }
+
+            // 2. Block if expired
+            if (exercise.dueDate && new Date() > new Date(exercise.dueDate)) {
+                alert("This assignment's deadline has passed. You can no longer submit work for it.");
+                return;
+            }
+
+            // 3. Require Assignment Code (NEW feature)
+            if (exercise.assignmentCode) {
+                const enteredCode = prompt(`Enter the Assignment Code for "${exercise.title}":`);
+                if (!enteredCode || enteredCode.trim().toUpperCase() !== exercise.assignmentCode) {
+                    alert("Incorrect Assignment Code. Access denied.");
+                    return;
+                }
+            }
+
+            currentExerciseId = exerciseId;
+            
+            document.getElementById('modal-exercise-title').textContent = exercise.title;
+            document.getElementById('modal-exercise-instructions').textContent = exercise.instructions;
+            document.getElementById('submission-answer').value = '';
+
+            // NEW: Show attachment if exists
+            const attachmentSection = document.getElementById('attachment-section');
+            const attachmentPreview = document.getElementById('attachment-preview');
+            
+            if (exercise.attachment && exercise.attachment.data) {
+                attachmentSection.classList.remove('hidden');
+                attachmentPreview.innerHTML = '';
+
+                if (exercise.attachment.type === 'image') {
+                    attachmentPreview.innerHTML = `
+                        <img src="${exercise.attachment.data}" class="max-h-64 rounded-xl mx-auto border" alt="Assignment attachment">
+                        <p class="text-center text-xs text-gray-500 mt-2">${exercise.attachment.name}</p>
+                    `;
+                } else if (exercise.attachment.type === 'pdf') {
+                    attachmentPreview.innerHTML = `
+                        <div class="flex items-center justify-center gap-x-3 p-4 bg-gray-50 rounded-xl">
+                            <i class="fas fa-file-pdf text-4xl text-red-500"></i>
+                            <div>
+                                <p class="font-semibold">${exercise.attachment.name}</p>
+                                <a href="${exercise.attachment.data}" download="${exercise.attachment.name}" 
+                                   class="text-blue-600 hover:underline text-sm flex items-center gap-x-1 mt-1">
+                                    <i class="fas fa-download"></i> Download PDF
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                attachmentSection.classList.add('hidden');
+            }
+
+            const modal = document.getElementById('exercise-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Timer
+            const timerSection = document.getElementById('timer-section');
+            if (exercise.dueDate) {
+                timerSection.classList.remove('hidden');
+                startCountdownTimer(exercise.dueDate);
+            } else {
+                timerSection.classList.add('hidden');
+            }
+
+            setTimeout(() => {
+                document.getElementById('submission-answer').focus();
+            }, 300);
+        }
+
+        function closeExerciseModal() {
+            const modal = document.getElementById('exercise-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            currentExerciseId = null;
+
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            // Clear attachment preview
+            const attachmentSection = document.getElementById('attachment-section');
+            if (attachmentSection) attachmentSection.classList.add('hidden');
+        }
+
+        function startCountdownTimer(dueDateStr) {
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            const timerEl = document.getElementById('countdown-timer');
+            if (!timerEl) return;
+
+            const due = new Date(dueDateStr);
+
+            countdownInterval = setInterval(() => {
+                const now = new Date();
+                const diff = due.getTime() - now.getTime();
+
+                if (diff <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    timerEl.innerHTML = `<span class="text-red-600 font-bold">TIME EXPIRED</span>`;
+                    setTimeout(() => {
+                        autoSubmitDueToTimeout();
+                    }, 900);
+                    return;
+                }
+
+                const totalSeconds = Math.floor(diff / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                let display = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+
+                if (diff < 5 * 60 * 1000) {
+                    timerEl.className = 'countdown text-3xl font-mono font-bold text-red-600';
+                    if (diff < 60 * 1000) display = `⚠️ ${display}`;
+                } else {
+                    timerEl.className = 'countdown text-3xl font-mono font-bold text-amber-800';
+                }
+                timerEl.textContent = display;
+            }, 1000);
+        }
+
+        function autoSubmitDueToTimeout() {
+            const answerEl = document.getElementById('submission-answer');
+            const answer = (answerEl && answerEl.value.trim()) || "[AUTO-SUBMITTED: Time expired. No written answer was provided.]";
+
+            let studentName = currentStudentName || "Anonymous (Auto-submit)";
+
+            const exercise = exercises.find(e => e.id === currentExerciseId);
+            if (!exercise) {
+                closeExerciseModal();
+                return;
+            }
+
+            const autoMark = autoMarkSubmission(answer, exercise);
+
+            const newSub = {
+                id: Date.now(),
+                studentName: studentName,
+                exerciseId: currentExerciseId,
+                exerciseTitle: exercise.title,
+                answer: answer,
+                timestamp: new Date().toISOString(),
+                grade: autoMark.grade,
+                feedback: autoMark.feedback,
+                late: false,
+                subject: exercise.subject || 'Other',
+                autoSubmitted: true
+            };
+
+            submissions.unshift(newSub);
+            saveData();
+
+            showToast("⏰ TIME EXPIRED! Your current work was automatically submitted.");
+
+            renderStudentExercises();
+            renderMySubmissions();
+
+            if (!document.getElementById('admin-dashboard').classList.contains('hidden')) {
+                updateAdminStats();
+                renderAdminSubmissions();
+            }
+
+            setTimeout(() => {
+                closeExerciseModal();
+            }, 2200);
+        }
+
+        // ==================== AUTOMATIC MARKING ====================
+        function autoMarkSubmission(answer, exercise) {
+            if (!exercise.correctAnswer || !exercise.correctAnswer.trim()) {
+                return { grade: '', feedback: '' };
+            }
+
+            const studentAnswer = answer.toLowerCase().trim();
+            const correctAnswer = exercise.correctAnswer.toLowerCase().trim();
+            const totalMarks = Number(exercise.totalMarks) || 100;
+
+            // Split the marking guide into keywords/answers using commas, semicolons, or new lines.
+            const keywords = correctAnswer
+                .split(/[,;\n]+/)
+                .map(k => k.trim())
+                .filter(Boolean);
+
+            let matched = 0;
+
+            if (keywords.length <= 1) {
+                matched = studentAnswer === correctAnswer || studentAnswer.includes(correctAnswer) ? 1 : 0;
+            } else {
+                matched = keywords.filter(keyword => studentAnswer.includes(keyword)).length;
+            }
+
+            const percentage = keywords.length > 1
+                ? Math.round((matched / keywords.length) * 100)
+                : (matched ? 100 : 0);
+
+            const score = Math.round((percentage / 100) * totalMarks);
+
+            let feedback = '';
+            if (percentage >= 80) {
+                feedback = 'Excellent work! Your answer matched most or all of the expected answers.';
+            } else if (percentage >= 50) {
+                feedback = 'Good attempt. Some parts of the expected answer were matched.';
+            } else {
+                feedback = 'Your answer did not match enough of the expected answer. Review the assignment and try to improve.';
+            }
+
+            return {
+                grade: `${score}/${totalMarks}`,
+                feedback: `Automatically marked: ${percentage}% match. ${feedback}`
+            };
+        }
+
+        function submitCurrentExercise() {
+            const answerEl = document.getElementById('submission-answer');
+            const answer = answerEl.value.trim();
+
+            if (!answer) {
+                alert("Please write your answer before submitting.");
+                return;
+            }
+
+            let studentName = currentStudentName;
+            if (!studentName) {
+                const enteredName = prompt("Please enter your name or student ID to submit:");
+                if (!enteredName || !enteredName.trim()) {
+                    alert("Submission cancelled. A name is required.");
+                    return;
+                }
+                studentName = enteredName.trim();
+                currentStudentName = studentName;
+                localStorage.setItem('portal_student_name', studentName);
+                const nameInput = document.getElementById('student-name');
+                if (nameInput) nameInput.value = studentName;
+                updateStudentNameDisplay();
+            }
+
+            const exercise = exercises.find(e => e.id === currentExerciseId);
+            if (!exercise) {
+                alert("Exercise could not be found.");
+                return;
+            }
+
+            let isLate = false;
+            if (exercise.dueDate && new Date() > new Date(exercise.dueDate)) {
+                isLate = true;
+            }
+
+            const autoMark = autoMarkSubmission(answer, exercise);
+
+            const newSub = {
+                id: Date.now(),
+                studentName: studentName,
+                exerciseId: currentExerciseId,
+                exerciseTitle: exercise.title,
+                answer: answer,
+                timestamp: new Date().toISOString(),
+                grade: autoMark.grade,
+                feedback: autoMark.feedback,
+                late: isLate,
+                subject: exercise.subject || 'Other',
+                autoSubmitted: false
+            };
+
+            submissions.unshift(newSub);
+            saveData();
+
+            closeExerciseModal();
+
+            if (isLate) {
+                showToast("Submitted (marked as LATE). Admin will review.");
+            } else {
+                showToast("Submitted successfully! Admin will review and assess your work.");
+            }
+
+            renderStudentExercises();
+            renderMySubmissions();
+
+            if (!document.getElementById('admin-dashboard').classList.contains('hidden')) {
+                updateAdminStats();
+                renderAdminSubmissions();
+            }
+        }
+
+        function renderMySubmissions() {
+            const container = document.getElementById('my-submissions');
+            if (!container) return;
+
+            if (!currentStudentName) {
+                container.innerHTML = `
+                    <div class="px-8 py-9 text-center">
+                        <i class="fas fa-user-circle text-gray-300 text-5xl mb-3"></i>
+                        <p class="text-gray-500">Save your name above to view your submission history and assessments.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const mySubs = submissions.filter(s => 
+                s.studentName.toLowerCase() === currentStudentName.toLowerCase()
+            );
+
+            if (mySubs.length === 0) {
+                container.innerHTML = `
+                    <div class="px-8 py-9 text-center">
+                        <i class="fas fa-inbox text-gray-300 text-5xl mb-3"></i>
+                        <p class="text-gray-500">You haven't submitted any assignments yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<div class="divide-y">`;
+            
+            mySubs.slice(0, 6).forEach(sub => {
+                const date = new Date(sub.timestamp).toLocaleDateString(undefined, { 
+                    month: 'short', day: 'numeric', year: 'numeric' 
+                });
+                
+                let statusHTML = '';
+                if (sub.grade && sub.grade.trim() !== '') {
+                    statusHTML = `<span class="px-3 py-1 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-2xl">Auto-Marked: ${sub.grade}</span>`;
+                } else if (sub.autoSubmitted) {
+                    statusHTML = `<span class="px-3 py-1 text-xs font-bold bg-purple-100 text-purple-700 rounded-2xl">Auto-submitted</span>`;
+                } else if (sub.late) {
+                    statusHTML = `<span class="px-3 py-1 text-xs font-bold bg-red-100 text-red-700 rounded-2xl">Late • Pending</span>`;
+                } else {
+                    statusHTML = `<span class="px-3 py-1 text-xs font-bold bg-amber-100 text-amber-700 rounded-2xl">Pending Review</span>`;
+                }
+                
+                html += `
+                    <div class="px-6 py-[17px] flex items-center justify-between hover:bg-gray-50 transition-colors">
+                        <div class="min-w-0 flex-1 pr-4">
+                            <p class="font-semibold text-gray-900 truncate">${sub.exerciseTitle}</p>
+                            <p class="text-xs text-gray-500 mt-px">${date}</p>
+                        </div>
+                        <div class="flex items-center gap-x-3">
+                            ${statusHTML}
+                            <button onclick="viewMySubmission(${sub.id}); event.stopImmediatePropagation();" 
+                                    class="px-5 py-2 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-2xl transition-colors">
+                                VIEW
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            
+            if (mySubs.length > 6) {
+                html += `<div class="bg-gray-50 px-6 py-2.5 text-xs text-center text-gray-500 font-medium">Showing latest 6 of ${mySubs.length} submissions</div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function viewMySubmission(subId) {
+            const sub = submissions.find(s => s.id === subId);
+            if (!sub) return;
+            showSubmissionModal(sub, true);
+        }
+
+        // ==================== ADMIN SIDE ====================
+        function loginAdmin() {
+            const passField = document.getElementById('admin-password');
+            if (passField.value === '1568') {
+                isAdminLoggedIn = true;
+                document.getElementById('admin-login-section').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                
+                updateAdminStats();
+                renderAdminStudents();
+                renderAdminExercises();
+                renderAdminSubmissions();
+                showToast("Welcome back, Admin!");
+            } else {
+                alert("Incorrect password. Please try again.");
+                passField.value = '';
+                passField.focus();
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('admin-login-section').classList.remove('hidden');
+            document.getElementById('admin-password').value = '';
+        }
+
+        function updateAdminStats() {
+            document.getElementById('stat-exercises').textContent = exercises.length;
+            document.getElementById('stat-submissions').textContent = submissions.length;
+            document.getElementById('stat-students').textContent = students.length;
+
+            const pending = submissions.filter(s => !s.grade || s.grade.trim() === '').length;
+            document.getElementById('stat-pending').textContent = pending;
+        }
+
+        function renderAdminStudents() {
+            const container = document.getElementById('admin-students-list');
+            if (!container) return;
+
+            if (students.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <i class="fas fa-users text-4xl text-gray-200 mb-3"></i>
+                        <p>No students registered yet. Use the form above to add members.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50 border-b text-xs font-bold text-gray-500 tracking-wider">
+                            <th class="text-left px-6 py-3">NAME</th>
+                            <th class="text-left px-6 py-3">STUDENT ID</th>
+                            <th class="text-right px-6 py-3">SUBMISSIONS</th>
+                            <th class="w-16 px-6 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+            `;
+
+            students.forEach(student => {
+                const subCount = submissions.filter(s => s.studentName.toLowerCase() === student.name.toLowerCase()).length;
+                html += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">${student.name}</td>
+                        <td class="px-6 py-4 text-gray-500 font-mono text-sm">${student.idCode || '-'}</td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-2xl">${subCount}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="deleteStudent(${student.id}); event.stopImmediatePropagation();" 
+                                    class="p-2 text-red-500 hover:bg-red-50 rounded-xl" title="Remove student">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function addNewStudent() {
+            const nameInput = document.getElementById('new-student-name');
+            const idInput = document.getElementById('new-student-id');
+
+            if (!nameInput.value.trim()) {
+                alert("Please enter the student's full name.");
+                return;
+            }
+
+            const newStudent = {
+                id: Date.now(),
+                name: nameInput.value.trim(),
+                idCode: idInput.value.trim() || ''
+            };
+
+            if (students.some(s => s.name.toLowerCase() === newStudent.name.toLowerCase())) {
+                alert("A student with this name already exists.");
+                return;
+            }
+
+            students.push(newStudent);
+            saveData();
+
+            nameInput.value = '';
+            idInput.value = '';
+
+            renderAdminStudents();
+            updateAdminStats();
+            showToast("New student member added!");
+        }
+
+        function deleteStudent(studentId) {
+            if (!confirm("Remove this student from the registered list?")) return;
+
+            students = students.filter(s => s.id !== studentId);
+            saveData();
+            renderAdminStudents();
+            updateAdminStats();
+        }
+
+        function renderAdminExercises() {
+            const container = document.getElementById('admin-exercises-list');
+            if (!container) return;
+
+            if (exercises.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        No assignments created yet.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<div class="divide-y">`;
+            
+            exercises.forEach(ex => {
+                const subCount = submissions.filter(s => s.exerciseId === ex.id).length;
+                let dueInfo = '';
+                if (ex.dueDate) {
+                    const d = new Date(ex.dueDate);
+                    dueInfo = `<span class="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-700 rounded-xl ml-2">${d.toLocaleDateString(undefined, {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})}</span>`;
+                }
+                
+                html += `
+                    <div class="px-6 py-5 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex-1 pr-4">
+                            <div class="flex items-center gap-x-2">
+                                <p class="font-semibold text-gray-900">${ex.title}</p>
+                                <span class="px-2.5 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-2xl">${ex.subject || 'General'}</span>
+                                ${dueInfo}
+                                ${ex.assignmentCode ? `<span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-purple-100 text-purple-700 rounded-xl">CODE: ${ex.assignmentCode}</span>` : ''}
+                                ${ex.correctAnswer ? `<span class="px-2 py-0.5 text-[10px] font-bold bg-orange-100 text-orange-700 rounded-xl"><i class="fas fa-robot mr-1"></i>AUTO-MARK</span>` : ''}
+                                ${ex.attachment ? `<span class="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-xl"><i class="fas fa-paperclip mr-1"></i>ATTACH</span>` : ''}
+                            </div>
+                            <p class="text-xs text-gray-500 mt-0.5 line-clamp-1">${ex.instructions.substring(0, 95)}...</p>
+                        </div>
+                        <div class="flex items-center gap-x-2 text-sm">
+                            <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-2xl text-xs font-medium">${subCount} submitted</span>
+                            <button onclick="editExercise(${ex.id}); event.stopImmediatePropagation();" 
+                                    class="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors" title="Edit assignment / adjust deadline">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteExercise(${ex.id}); event.stopImmediatePropagation();" 
+                                    class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors" title="Delete assignment">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function addNewExercise() {
+            const titleEl = document.getElementById('new-exercise-title');
+            const instEl = document.getElementById('new-exercise-instructions');
+            const subjectEl = document.getElementById('new-exercise-subject');
+            const dueEl = document.getElementById('new-exercise-due');
+            const codeEl = document.getElementById('new-exercise-code');
+            const correctAnswerEl = document.getElementById('new-exercise-correct-answer');
+            const totalMarksEl = document.getElementById('new-exercise-total-marks');
+            const fileInput = document.getElementById('new-exercise-attachment');
+
+            if (!titleEl.value.trim() || !instEl.value.trim()) {
+                alert("Please enter both a title and instructions.");
+                return;
+            }
+
+            const assignmentCode = codeEl && codeEl.value.trim() ? codeEl.value.trim().toUpperCase() : '';
+
+            const createExercise = (attachmentData = null) => {
+                const newExercise = {
+                    id: Date.now(),
+                    title: titleEl.value.trim(),
+                    instructions: instEl.value.trim(),
+                    subject: subjectEl ? subjectEl.value : 'Other',
+                    dueDate: dueEl && dueEl.value ? new Date(dueEl.value).toISOString() : null,
+                    assignmentCode: assignmentCode,
+                    correctAnswer: correctAnswerEl ? correctAnswerEl.value.trim() : '',
+                    totalMarks: totalMarksEl ? (Number(totalMarksEl.value) || 100) : 100,
+                    attachment: attachmentData   // {type, data, name}
+                };
+
+                exercises.push(newExercise);
+                saveData();
+
+                titleEl.value = '';
+                instEl.value = '';
+                if (dueEl) dueEl.value = '';
+                if (codeEl) codeEl.value = '';
+                if (correctAnswerEl) correctAnswerEl.value = '';
+                if (totalMarksEl) totalMarksEl.value = '100';
+                if (fileInput) fileInput.value = '';
+
+                renderAdminExercises();
+                renderStudentExercises();
+                updateAdminStats();
+                showToast("New assignment published!");
+            };
+
+            // Handle file attachment if selected
+            if (fileInput && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const attachmentData = {
+                        name: file.name,
+                        type: file.type.startsWith('image/') ? 'image' : 'pdf',
+                        data: e.target.result   // base64 data URL
+                    };
+                    createExercise(attachmentData);
+                };
+
+                reader.readAsDataURL(file);
+            } else {
+                createExercise(null);
+            }
+        }
+
+        function editExercise(exId) {
+            const ex = exercises.find(e => e.id === exId);
+            if (!ex) return;
+
+            const newTitle = prompt("Edit Title:", ex.title);
+            if (newTitle === null) return;
+
+            const newInstructions = prompt("Edit Instructions:", ex.instructions);
+            if (newInstructions === null) return;
+
+            const newSubject = prompt("Edit Subject:", ex.subject || 'Other');
+            if (newSubject === null) return;
+
+            const newCode = prompt("Edit Assignment Code (students must enter this):", ex.assignmentCode || '');
+            if (newCode === null) return;
+
+            let newDue = ex.dueDate;
+            const changeDue = confirm("Would you like to change the deadline? (Current: " + (ex.dueDate ? new Date(ex.dueDate).toLocaleString() : 'No deadline') + ")");
+            if (changeDue) {
+                const dueInput = prompt("Enter new due date & time (YYYY-MM-DDTHH:MM) or leave blank to remove deadline:", 
+                    ex.dueDate ? new Date(ex.dueDate).toISOString().slice(0, 16) : '');
+                if (dueInput !== null) {
+                    newDue = dueInput ? new Date(dueInput).toISOString() : null;
+                }
+            }
+
+            ex.title = newTitle.trim() || ex.title;
+            ex.instructions = newInstructions.trim() || ex.instructions;
+            ex.subject = newSubject.trim() || ex.subject;
+            ex.assignmentCode = newCode.trim().toUpperCase() || ex.assignmentCode;
+            ex.dueDate = newDue;
+
+            saveData();
+            renderAdminExercises();
+            renderStudentExercises();
+            updateAdminStats();
+            showToast("Assignment updated successfully!");
+        }
+
+        function deleteExercise(exId) {
+            if (!confirm("Delete this assignment? All related submissions will remain but the assignment will be removed.")) return;
+
+            exercises = exercises.filter(e => e.id !== exId);
+            saveData();
+
+            renderAdminExercises();
+            renderStudentExercises();
+            updateAdminStats();
+        }
+
+        function renderAdminSubmissions() {
+            const tbody = document.getElementById('admin-submissions-table');
+            if (!tbody) return;
+
+            if (submissions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-7 py-16 text-center">
+                            <i class="fas fa-inbox text-4xl text-gray-200 mb-3 block"></i>
+                            <span class="text-gray-400">No submissions received yet.</span>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            
+            submissions.forEach(sub => {
+                const dateStr = new Date(sub.timestamp).toLocaleDateString(undefined, {
+                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                });
+                
+                let statusHTML = '';
+                if (sub.grade && sub.grade.trim() !== '') {
+                    statusHTML = `<span class="px-3 py-1 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-2xl">Assessed</span>`;
+                } else {
+                    statusHTML = `<span class="px-3 py-1 text-xs font-bold bg-amber-100 text-amber-700 rounded-2xl">Pending</span>`;
+                }
+                
+                if (sub.late) {
+                    statusHTML += ` <span class="px-2 py-0.5 text-[10px] font-bold bg-red-100 text-red-700 rounded-2xl">LATE</span>`;
+                }
+                if (sub.autoSubmitted) {
+                    statusHTML += ` <span class="px-2 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700 rounded-2xl">AUTO</span>`;
+                }
+                
+                html += `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-7 py-4 font-medium text-gray-900">${sub.studentName}</td>
+                        <td class="px-7 py-4 text-gray-700">${sub.exerciseTitle}</td>
+                        <td class="px-7 py-4">${statusHTML}</td>
+                        <td class="px-7 py-4 text-gray-500 text-sm">${dateStr}</td>
+                        <td class="px-7 py-4 text-right">
+                            <button onclick="viewSubmission(${sub.id}); event.stopImmediatePropagation();" 
+                                    class="inline-flex items-center px-4 py-2 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-2xl transition-all">
+                                <i class="fas fa-eye mr-1.5"></i> REVIEW
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function viewSubmission(subId) {
+            const sub = submissions.find(s => s.id === subId);
+            if (!sub) return;
+            currentViewingSubmissionId = subId;
+            showSubmissionModal(sub, false);
+        }
+
+        function showSubmissionModal(sub, isStudentView = false) {
+            currentViewingSubmissionId = sub.id;
+
+            document.getElementById('submission-exercise-title').textContent = sub.exerciseTitle;
+            document.getElementById('submission-meta').innerHTML = 
+                `Submitted by <span class="font-semibold text-gray-700">${sub.studentName}</span> on ${new Date(sub.timestamp).toLocaleString()}`;
+            document.getElementById('submission-answer-full').textContent = sub.answer;
+
+            const assessmentSection = document.getElementById('assessment-section');
+            const studentAssessmentView = document.getElementById('student-assessment-view');
+
+            if (isStudentView) {
+                assessmentSection.classList.add('hidden');
+                if (sub.grade && sub.grade.trim() !== '') {
+                    studentAssessmentView.classList.remove('hidden');
+                    document.getElementById('student-grade-badge').textContent = sub.grade;
+                    document.getElementById('student-feedback-text').textContent = sub.feedback || 'No additional feedback provided.';
+                } else {
+                    studentAssessmentView.classList.add('hidden');
+                }
+            } else {
+                studentAssessmentView.classList.add('hidden');
+                assessmentSection.classList.remove('hidden');
+
+                document.getElementById('assessment-grade').value = sub.grade || '';
+                document.getElementById('assessment-feedback').value = sub.feedback || '';
+            }
+
+            const modal = document.getElementById('submission-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeSubmissionModal() {
+            const modal = document.getElementById('submission-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            currentViewingSubmissionId = null;
+        }
+
+        function saveAssessment() {
+            if (!currentViewingSubmissionId) return;
+
+            const grade = document.getElementById('assessment-grade').value.trim();
+            const feedback = document.getElementById('assessment-feedback').value.trim();
+
+            const subIndex = submissions.findIndex(s => s.id === currentViewingSubmissionId);
+            if (subIndex === -1) return;
+
+            submissions[subIndex].grade = grade;
+            submissions[subIndex].feedback = feedback;
+
+            saveData();
+
+            showToast("Assessment saved! Student can now view their grade and feedback.");
+            closeSubmissionModal();
+
+            renderAdminSubmissions();
+            updateAdminStats();
+            renderMySubmissions();
+        }
+
+        function clearAllSubmissions() {
+            if (!confirm("This will permanently delete ALL student submissions. Continue?")) return;
+            
+            submissions = [];
+            saveData();
+            renderAdminSubmissions();
+            updateAdminStats();
+            renderMySubmissions();
+            showToast("All submissions have been cleared.");
+        }
+
+        function switchView(view) {
+            const studentDiv = document.getElementById('student-view');
+            const adminDiv = document.getElementById('admin-view');
+
+            if (view === 'student') {
+                // Always log out of Admin when switching to Student View.
+                isAdminLoggedIn = false;
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                document.getElementById('admin-login-section').classList.remove('hidden');
+                const passInput = document.getElementById('admin-password');
+                if (passInput) passInput.value = '';
+
+                studentDiv.classList.remove('hidden');
+                adminDiv.classList.add('hidden');
+                renderStudentExercises();
+                renderMySubmissions();
+            } else {
+                studentDiv.classList.add('hidden');
+                adminDiv.classList.remove('hidden');
+
+                // Require admin to log in again every time Admin Dashboard is opened.
+                isAdminLoggedIn = false;
+                document.getElementById('admin-login-section').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                const passInput = document.getElementById('admin-password');
+                if (passInput) {
+                    passInput.value = '';
+                    setTimeout(() => passInput.focus(), 100);
+                }
+            }
+        }
+
+        function initializeApp() {
+            loadData();
+
+            // Enter key for admin password
+            const passInput = document.getElementById('admin-password');
+            if (passInput) {
+                passInput.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter') loginAdmin();
+                });
+            }
+
+            // Student View is the main/default page.
+            // Admin requires login only after selecting Admin Dashboard.
+            document.getElementById('student-view').classList.remove('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
+
+            isAdminLoggedIn = false;
+            document.getElementById('admin-login-section').classList.remove('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+
+            renderStudentExercises();
+            renderMySubmissions();
+
+            console.log('%c[EduSubmit Rewritten] Clean admin-focused portal with subjects, deadlines & auto-submit ready.', 'color:#64748b');
+        }
+
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
